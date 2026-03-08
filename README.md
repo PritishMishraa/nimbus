@@ -18,6 +18,11 @@ Build the application
 make build
 ```
 
+Run lint 
+```bash
+make lint
+```
+
 Run the application
 ```bash
 make run
@@ -25,7 +30,7 @@ make run
 
 Live reload the application:
 ```bash
-make watch
+make dev
 ```
 
 Run the test suite:

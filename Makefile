@@ -7,24 +7,29 @@ build:
 	@echo "Building..."
 	
 	
-	@go build -o main cmd/api/main.go
+	@go build -o main cmd/nimbus/main.go
 
 # Run the application
 run:
-	@go run cmd/api/main.go
+	@go run cmd/nimbus/main.go
 
 # Test the application
 test:
 	@echo "Testing..."
 	@go test ./... -v
 
+# Lint the application
+lint:
+	@echo "Linting..."
+	@golangci-lint run
+	
 # Clean the binary
 clean:
 	@echo "Cleaning..."
 	@rm -f main
 
-# Live Reload
-watch:
+# Run the application with Live Reload
+dev:
 	@if command -v air > /dev/null; then \
             air; \
             echo "Watching...";\
@@ -40,4 +45,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch
+.PHONY: all build run test clean dev
