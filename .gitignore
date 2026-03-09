@@ -32,3 +32,8 @@ main
 # OS X generated file
 .DS_Store
 
+# Generated file
+file_snapshot.md
+
+# Scripts
+export_*.sh
