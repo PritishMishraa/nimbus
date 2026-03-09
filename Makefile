@@ -5,13 +5,11 @@ all: build test
 
 build:
 	@echo "Building..."
-	
-	
-	@go build -o main cmd/nimbus/main.go
+	@go build ./...
 
 # Run the application
 run:
-	@go run cmd/nimbus/main.go
+	@go run ./cmd/coordinator
 
 # Test the application
 test:
@@ -26,7 +24,6 @@ lint:
 # Clean the binary
 clean:
 	@echo "Cleaning..."
-	@rm -f main
 
 # Run the application with Live Reload
 dev:

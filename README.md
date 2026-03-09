@@ -1,44 +1,29 @@
 # Project nimbus
 
-One Paragraph of project description goes here
+Nimbus is a MapReduce project skeleton. The repository is organized around small binaries and internal packages, with placeholder types for the coordinator, worker, and future apps.
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+Build everything:
 
-## MakeFile
-
-Run build make command with tests
-```bash
-make all
-```
-
-Build the application
 ```bash
 make build
 ```
 
-Run lint 
-```bash
-make lint
-```
+Run tests:
 
-Run the application
-```bash
-make run
-```
-
-Live reload the application:
-```bash
-make dev
-```
-
-Run the test suite:
 ```bash
 make test
 ```
 
-Clean up binary from the last build:
+Run the placeholder coordinator:
+
 ```bash
-make clean
+go run ./cmd/coordinator
+```
+
+Run the placeholder worker:
+
+```bash
+go run ./cmd/worker
 ```
