@@ -11,6 +11,9 @@ build:
 run:
 	@go run ./cmd/coordinator
 
+demo:
+	@bash ./scripts/demo_local_rpc.sh
+
 # Test the application
 test:
 	@echo "Testing..."
@@ -42,4 +45,4 @@ dev:
             fi; \
         fi
 
-.PHONY: all build run test fmt lint clean dev
+.PHONY: all build run demo test fmt lint clean dev

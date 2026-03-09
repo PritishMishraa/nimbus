@@ -61,6 +61,9 @@ func (c *trackingClient) RequestTask() (mr.RequestTaskResponse, error) {
 
 	c.sawDone = resp.Done
 	c.sawWait = resp.Wait
+	if !resp.Done && !resp.Wait {
+		fmt.Printf("assigned %s (%s) input=%s\n", resp.Task.ID, resp.Task.Type, resp.Task.Input)
+	}
 	return resp, nil
 }
 
@@ -70,5 +73,6 @@ func (c *trackingClient) CompleteTask(taskID string) error {
 	}
 
 	c.completed++
+	fmt.Printf("completed %s (%d total)\n", taskID, c.completed)
 	return nil
 }
