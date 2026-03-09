@@ -14,6 +14,9 @@ run:
 demo:
 	@bash ./scripts/demo_local_rpc.sh
 
+web:
+	@python3 -m http.server 4173 --directory ./web
+
 # Test the application
 test:
 	@echo "Testing..."
@@ -45,4 +48,4 @@ dev:
             fi; \
         fi
 
-.PHONY: all build run demo test fmt lint clean dev
+.PHONY: all build run demo web test fmt lint clean dev

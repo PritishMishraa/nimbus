@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nimbus Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>Nimbus demo</h1>
+          <p class="topbar-copy">
+            Nimbus is a Go MapReduce-style system with a coordinator, RPC
+            workers, grep-style map execution, JSONL intermediate output, and
+            lease-based reassignment.
+          </p>
+        </div>
+        <div class="toolbar-actions">
+          <button id="play-demo" class="button primary">Play demo</button>
+          <button id="step-demo" class="button">Step once</button>
+          <button id="lease-demo" class="button">Lease expiry mode</button>
+          <button id="reset-demo" class="button">Reset</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="section split">
+          <article class="panel">
+            <h2>System</h2>
+            <p>
+              The coordinator tracks task state. Workers request one task at a
+              time, load the referenced file locally, run the current grep map
+              logic, write `mr-&lt;task-id&gt;.jsonl`, and report completion back over
+              RPC.
+            </p>
+            <div class="summary-list">
+              <div class="summary-item">
+                <span>Pending</span>
+                <strong id="pending-count">0</strong>
+              </div>
+              <div class="summary-item">
+                <span>Running</span>
+                <strong id="running-count">0</strong>
+              </div>
+              <div class="summary-item">
+                <span>Done</span>
+                <strong id="done-count">0</strong>
+              </div>
+              <div class="summary-item">
+                <span>Artifacts</span>
+                <strong id="artifact-count">0</strong>
+              </div>
+            </div>
+          </article>
+          <article class="panel terminal-panel">
+            <div class="panel-header">
+              <h2>Terminal</h2>
+            </div>
+            <pre id="terminal-log" class="terminal-log"></pre>
+          </article>
+        </section>
+
+        <section class="section">
+          <div class="board-grid">
+            <article class="panel">
+              <div class="panel-header">
+                <h2>Coordinator queue</h2>
+                <span id="mode-pill" class="mode-label">Standard run</span>
+              </div>
+              <div id="task-list" class="task-list"></div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-header">
+                <h2>Workers</h2>
+              </div>
+              <div id="worker-list" class="worker-list"></div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-header">
+                <h2>Intermediate JSONL</h2>
+              </div>
+              <div id="artifact-list" class="artifact-list"></div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-header">
+                <h2>Event log</h2>
+              </div>
+              <ol id="event-log" class="event-log"></ol>
+            </article>
+          </div>
+        </section>
+
+        <section class="section two-column">
+          <article class="panel narrative">
+            <div class="panel-header">
+              <h2>Input data</h2>
+            </div>
+            <div id="input-files" class="file-list"></div>
+          </article>
+
+          <article class="panel narrative">
+            <div class="panel-header">
+              <h2>Run the project</h2>
+            </div>
+            <p>
+              Use the real local demo to start the coordinator and worker
+              processes. Use the web server when you want this page only.
+            </p>
+            <div class="command-block">
+              <code>make demo</code>
+            </div>
+            <div class="command-block">
+              <code>make web</code>
+            </div>
+            <p>
+              Current scope is still map-only. Reduce execution and durable
+              coordinator state are not implemented yet.
+            </p>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -104,6 +104,23 @@ make demo
 
 The script stores its temporary files in a fresh directory under `/tmp` and prints that path before exiting.
 
+## Web demo page
+
+A self-contained demo page now lives at [`web/index.html`](/Users/pritishmishra/Documents/Projects/nimbus/web/index.html). It explains the coordinator/worker architecture and includes an in-browser simulation of:
+
+- task assignment over RPC
+- grep-style map execution
+- JSONL intermediate artifact creation
+- lease-expiry reassignment when a worker stalls
+
+Serve it locally from the repo root with:
+
+```bash
+make web
+```
+
+Then open [http://localhost:4173](http://localhost:4173).
+
 ## Architecture
 
 - [`cmd/coordinator`](/Users/pritishmishra/Documents/Projects/nimbus/cmd/coordinator/main.go) starts the TCP RPC server and seeds map tasks from `-inputs`.
