@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestTaskStart(t *testing.T) {
@@ -200,5 +201,37 @@ func TestTaskLifecycleReassignmentPath(t *testing.T) {
 	}
 	if task.Status != TaskStatusDone {
 		t.Fatalf("task.Status = %s, want %s", task.Status, TaskStatusDone)
+	}
+}
+
+func TestTaskStartLeaseSetsExpiry(t *testing.T) {
+	t.Parallel()
+
+	task := Task{Status: TaskStatusPending}
+	startedAt := time.Date(2026, time.March, 9, 12, 0, 0, 0, time.UTC)
+
+	if err := task.StartLease(startedAt, 5*time.Second); err != nil {
+		t.Fatalf("StartLease() error = %v, want nil", err)
+	}
+
+	if task.LeaseExpiresAt != startedAt.Add(5*time.Second) {
+		t.Fatalf("task.LeaseExpiresAt = %v, want %v", task.LeaseExpiresAt, startedAt.Add(5*time.Second))
+	}
+}
+
+func TestTaskLeaseExpired(t *testing.T) {
+	t.Parallel()
+
+	expiresAt := time.Date(2026, time.March, 9, 12, 0, 5, 0, time.UTC)
+	task := Task{
+		Status:         TaskStatusRunning,
+		LeaseExpiresAt: expiresAt,
+	}
+
+	if !task.LeaseExpired(expiresAt) {
+		t.Fatal("LeaseExpired() = false at deadline, want true")
+	}
+	if task.LeaseExpired(expiresAt.Add(-time.Nanosecond)) {
+		t.Fatal("LeaseExpired() = true before deadline, want false")
 	}
 }

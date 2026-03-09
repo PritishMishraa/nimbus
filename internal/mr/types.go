@@ -3,6 +3,7 @@ package mr
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 type TaskType string
@@ -22,10 +23,11 @@ const (
 )
 
 type Task struct {
-	ID     string
-	Type   TaskType
-	Input  string
-	Status TaskStatus
+	ID             string
+	Type           TaskType
+	Input          string
+	Status         TaskStatus
+	LeaseExpiresAt time.Time
 }
 
 var (
@@ -39,11 +41,21 @@ func (t Task) IsTerminal() bool {
 }
 
 func (t *Task) Start() error {
+	return t.StartLease(time.Time{}, 0)
+}
+
+func (t *Task) StartLease(startedAt time.Time, leaseDuration time.Duration) error {
 	if t.Status != TaskStatusPending {
 		return fmt.Errorf("%w: cannot start task from status %s", ErrTaskCannotStart, t.Status)
 	}
 
 	t.Status = TaskStatusRunning
+	if startedAt.IsZero() || leaseDuration <= 0 {
+		t.LeaseExpiresAt = time.Time{}
+		return nil
+	}
+
+	t.LeaseExpiresAt = startedAt.Add(leaseDuration)
 	return nil
 }
 
@@ -53,6 +65,7 @@ func (t *Task) Complete() error {
 	}
 
 	t.Status = TaskStatusDone
+	t.LeaseExpiresAt = time.Time{}
 	return nil
 }
 
@@ -62,5 +75,14 @@ func (t *Task) Reset() error {
 	}
 
 	t.Status = TaskStatusPending
+	t.LeaseExpiresAt = time.Time{}
 	return nil
+}
+
+func (t Task) LeaseExpired(now time.Time) bool {
+	if t.Status != TaskStatusRunning || t.LeaseExpiresAt.IsZero() {
+		return false
+	}
+
+	return !now.Before(t.LeaseExpiresAt)
 }

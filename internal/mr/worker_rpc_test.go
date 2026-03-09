@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestRunWorkerRPCDrainsSingleTask(t *testing.T) {
@@ -258,6 +259,58 @@ func TestRunWorkerRPCMiniEndToEndFlow(t *testing.T) {
 
 	if !c.AllDone() {
 		t.Fatal("AllDone() = false, want true")
+	}
+}
+
+func TestRunWorkerRPCReclaimsExpiredTaskFromFailedWorker(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, time.March, 9, 12, 0, 0, 0, time.UTC)
+	c := NewCoordinatorWithLease([]Task{
+		{ID: "task-1", Type: TaskTypeMap, Input: "notes.txt", Status: TaskStatusPending},
+	}, 5*time.Second)
+	c.now = func() time.Time { return now }
+
+	_, failingClient := startTestRPCClient(t, c)
+
+	firstResp, err := failingClient.RequestTask()
+	if err != nil {
+		t.Fatalf("failingClient.RequestTask() error = %v, want nil", err)
+	}
+	if firstResp.Task.ID != "task-1" {
+		t.Fatalf("firstResp.Task.ID = %q, want %q", firstResp.Task.ID, "task-1")
+	}
+	if c.tasks[0].Status != TaskStatusRunning {
+		t.Fatalf("c.tasks[0].Status after first claim = %s, want %s", c.tasks[0].Status, TaskStatusRunning)
+	}
+
+	c.now = func() time.Time { return now.Add(6 * time.Second) }
+
+	_, recoveryClient := startTestRPCClient(t, c)
+	dir := t.TempDir()
+	loadCalls := 0
+	load := func(input string) (string, error) {
+		loadCalls++
+		if input != "notes.txt" {
+			t.Fatalf("load() input = %q, want %q", input, "notes.txt")
+		}
+
+		return "alpha\nbeta match\ngamma", nil
+	}
+
+	if err := RunWorkerRPC(recoveryClient, dir, "match", load); err != nil {
+		t.Fatalf("RunWorkerRPC() error = %v, want nil", err)
+	}
+	if loadCalls != 1 {
+		t.Fatalf("load() calls = %d, want 1", loadCalls)
+	}
+	if c.tasks[0].Status != TaskStatusDone {
+		t.Fatalf("c.tasks[0].Status after recovery = %s, want %s", c.tasks[0].Status, TaskStatusDone)
+	}
+
+	path := filepath.Join(dir, IntermediateFileName("task-1"))
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("os.Stat(%q) error = %v, want nil", path, err)
 	}
 }
 

@@ -10,11 +10,11 @@ Nimbus is a small MapReduce-style system in Go with a TCP RPC coordinator and a 
 - Grep-style map execution
 - Intermediate artifact writing (`mr-<task-id>.jsonl`)
 - Local multi-process demo with separate coordinator and worker terminals
+- Automatic lease/timeout reassignment for expired running tasks
 
 Not implemented yet:
 
 - reduce execution
-- automatic lease/timeout reassignment
 - durable coordinator state
 
 ## Build and test
@@ -52,6 +52,7 @@ Expected startup output:
 ```text
 coordinator listening on 127.0.0.1:9000
 initial task count: 2
+task lease: 30s
 ```
 
 Run the worker in terminal 2:
@@ -107,7 +108,7 @@ The script stores its temporary files in a fresh directory under `/tmp` and prin
 
 - [`cmd/coordinator`](/Users/pritishmishra/Documents/Projects/nimbus/cmd/coordinator/main.go) starts the TCP RPC server and seeds map tasks from `-inputs`.
 - [`cmd/worker`](/Users/pritishmishra/Documents/Projects/nimbus/cmd/worker/main.go) dials the coordinator, pulls tasks over RPC, executes grep map work, and reports completion remotely.
-- [`internal/mr/coordinator.go`](/Users/pritishmishra/Documents/Projects/nimbus/internal/mr/coordinator.go) owns task lifecycle transitions (`pending -> running -> done`, plus manual reset from `running -> pending`).
+- [`internal/mr/coordinator.go`](/Users/pritishmishra/Documents/Projects/nimbus/internal/mr/coordinator.go) owns task lifecycle transitions (`pending -> running -> done`) and reclaims expired `running` tasks back to `pending`.
 - [`internal/mr/rpc.go`](/Users/pritishmishra/Documents/Projects/nimbus/internal/mr/rpc.go) exposes the coordinator RPC methods for `RequestTask`, `CompleteTaskRPC`, and `ResetTaskRPC`.
 - [`internal/mr/worker_rpc.go`](/Users/pritishmishra/Documents/Projects/nimbus/internal/mr/worker_rpc.go) is the RPC-backed worker loop.
 - [`internal/apps/grep.go`](/Users/pritishmishra/Documents/Projects/nimbus/internal/apps/grep.go) implements the grep-style map logic.
@@ -115,5 +116,5 @@ The script stores its temporary files in a fresh directory under `/tmp` and prin
 ## Limitations
 
 - A worker stops immediately on `wait`; it does not poll for more work.
-- If a worker fails after assignment, the task remains `running` until manually reset.
+- Reassignment happens when the coordinator is asked for more work; there is no background sweeper yet.
 - Inputs are expected to be local files visible to the worker process.

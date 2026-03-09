@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"nimbus/internal/mr"
 )
@@ -14,10 +15,11 @@ import (
 func main() {
 	addr := flag.String("addr", "127.0.0.1:9000", "coordinator listen address")
 	inputsFlag := flag.String("inputs", "demo-a.txt,demo-b.txt", "comma-separated map task input files")
+	lease := flag.Duration("lease", mr.DefaultTaskLease, "task lease duration before running work is reassigned")
 	flag.Parse()
 
 	tasks := makeTasks(*inputsFlag)
-	coordinator := mr.NewCoordinator(tasks)
+	coordinator := mr.NewCoordinatorWithLease(tasks, normalizeLease(*lease))
 
 	listener, err := mr.StartCoordinatorRPC(coordinator, *addr)
 	if err != nil {
@@ -28,10 +30,19 @@ func main() {
 
 	fmt.Printf("coordinator listening on %s\n", listener.Addr().String())
 	fmt.Printf("initial task count: %d\n", coordinator.TaskCount())
+	fmt.Printf("task lease: %s\n", normalizeLease(*lease))
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
 	<-signals
+}
+
+func normalizeLease(lease time.Duration) time.Duration {
+	if lease <= 0 {
+		return mr.DefaultTaskLease
+	}
+
+	return lease
 }
 
 func makeTasks(inputsFlag string) []mr.Task {

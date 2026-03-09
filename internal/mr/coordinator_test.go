@@ -3,6 +3,7 @@ package mr
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 func TestNewCoordinatorStartsNotDone(t *testing.T) {
@@ -410,5 +411,35 @@ func TestCoordinatorMiniFaultToleranceFlow(t *testing.T) {
 	}
 	if c.tasks[0].Status != TaskStatusDone {
 		t.Fatalf("c.tasks[0].Status after completion = %s, want %s", c.tasks[0].Status, TaskStatusDone)
+	}
+}
+
+func TestNextTaskReclaimsExpiredRunningTask(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, time.March, 9, 12, 0, 0, 0, time.UTC)
+	c := NewCoordinatorWithLease([]Task{
+		{
+			ID:             "task-1",
+			Type:           TaskTypeMap,
+			Input:          "a.txt",
+			Status:         TaskStatusRunning,
+			LeaseExpiresAt: now.Add(-time.Second),
+		},
+	}, 5*time.Second)
+	c.now = func() time.Time { return now }
+
+	task, err := c.NextTask()
+	if err != nil {
+		t.Fatalf("NextTask() error = %v, want nil", err)
+	}
+	if task.ID != "task-1" {
+		t.Fatalf("NextTask() task.ID = %q, want %q", task.ID, "task-1")
+	}
+	if c.tasks[0].Status != TaskStatusRunning {
+		t.Fatalf("c.tasks[0].Status = %s, want %s", c.tasks[0].Status, TaskStatusRunning)
+	}
+	if c.tasks[0].LeaseExpiresAt != now.Add(5*time.Second) {
+		t.Fatalf("c.tasks[0].LeaseExpiresAt = %v, want %v", c.tasks[0].LeaseExpiresAt, now.Add(5*time.Second))
 	}
 }

@@ -3,10 +3,13 @@ package mr
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 type Coordinator struct {
-	tasks []Task
+	tasks         []Task
+	leaseDuration time.Duration
+	now           func() time.Time
 }
 
 var (
@@ -17,20 +20,32 @@ var (
 	ErrTaskNotResettable  = errors.New("task cannot be reset")
 )
 
+const DefaultTaskLease = 30 * time.Second
+
 func NewCoordinator(tasks []Task) *Coordinator {
+	return NewCoordinatorWithLease(tasks, DefaultTaskLease)
+}
+
+func NewCoordinatorWithLease(tasks []Task, leaseDuration time.Duration) *Coordinator {
 	ownedTasks := make([]Task, len(tasks))
 	copy(ownedTasks, tasks)
 
-	return &Coordinator{tasks: ownedTasks}
+	return &Coordinator{
+		tasks:         ownedTasks,
+		leaseDuration: leaseDuration,
+		now:           time.Now,
+	}
 }
 
 func (c *Coordinator) NextTask() (*Task, error) {
+	c.reclaimExpiredTasks()
+
 	for i := range c.tasks {
 		if c.tasks[i].Status != TaskStatusPending {
 			continue
 		}
 
-		if err := c.tasks[i].Start(); err != nil {
+		if err := c.tasks[i].StartLease(c.now(), c.leaseDuration); err != nil {
 			return nil, err
 		}
 
@@ -103,4 +118,15 @@ func (c *Coordinator) taskByID(id string) (*Task, error) {
 	}
 
 	return nil, fmt.Errorf("%w: %s", ErrTaskNotFound, id)
+}
+
+func (c *Coordinator) reclaimExpiredTasks() {
+	now := c.now()
+	for i := range c.tasks {
+		if !c.tasks[i].LeaseExpired(now) {
+			continue
+		}
+
+		_ = c.tasks[i].Reset()
+	}
 }
