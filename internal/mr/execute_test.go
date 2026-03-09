@@ -2,6 +2,7 @@ package mr
 
 import (
 	"errors"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -148,5 +149,21 @@ func TestExecuteMapTaskFullMiniIntegration(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ExecuteMapTask() = %#v, want %#v", got, want)
+	}
+
+	dir := t.TempDir()
+	path, err := WriteIntermediate(task.ID, dir, got)
+	if err != nil {
+		t.Fatalf("WriteIntermediate() error = %v, want nil", err)
+	}
+
+	wantPath := filepath.Join(dir, IntermediateFileName(task.ID))
+	if path != wantPath {
+		t.Fatalf("WriteIntermediate() path = %q, want %q", path, wantPath)
+	}
+
+	decoded := readIntermediateRecords(t, path)
+	if !reflect.DeepEqual(decoded, want) {
+		t.Fatalf("decoded intermediate records = %#v, want %#v", decoded, want)
 	}
 }
