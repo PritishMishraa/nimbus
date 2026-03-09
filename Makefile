@@ -42,4 +42,4 @@ dev:
             fi; \
         fi
 
-.PHONY: all build run test clean dev
+.PHONY: all build run test fmt lint pre-commit install-git-hooks clean dev
