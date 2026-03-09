@@ -1,7 +1,56 @@
 package main
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+
+	"nimbus/internal/mr"
+)
 
 func main() {
-	fmt.Println("nimbus: coordinator")
+	addr := flag.String("addr", "127.0.0.1:9000", "coordinator listen address")
+	inputsFlag := flag.String("inputs", "demo-a.txt,demo-b.txt", "comma-separated map task input files")
+	flag.Parse()
+
+	tasks := makeTasks(*inputsFlag)
+	coordinator := mr.NewCoordinator(tasks)
+
+	listener, err := mr.StartCoordinatorRPC(coordinator, *addr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "start coordinator rpc: %v\n", err)
+		os.Exit(1)
+	}
+	defer listener.Close()
+
+	fmt.Printf("coordinator listening on %s\n", listener.Addr().String())
+	fmt.Printf("initial task count: %d\n", coordinator.TaskCount())
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	<-signals
+}
+
+func makeTasks(inputsFlag string) []mr.Task {
+	parts := strings.Split(inputsFlag, ",")
+	tasks := make([]mr.Task, 0, len(parts))
+
+	for i, part := range parts {
+		input := strings.TrimSpace(part)
+		if input == "" {
+			continue
+		}
+
+		tasks = append(tasks, mr.Task{
+			ID:     fmt.Sprintf("task-%d", i+1),
+			Type:   mr.TaskTypeMap,
+			Input:  input,
+			Status: mr.TaskStatusPending,
+		})
+	}
+
+	return tasks
 }
